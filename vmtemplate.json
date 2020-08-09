@@ -1,124 +1,211 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-        "extensions_enablevmaccess_username": {
-            "type": "SecureString"
-        },
-        "extensions_enablevmaccess_password": {
-            "type": "SecureString"
-        },
-        "extensions_enablevmaccess_ssh_key": {
-            "type": "SecureString"
-        },
-        "extensions_enablevmaccess_reset_ssh": {
-            "type": "SecureString"
-        },
-        "extensions_enablevmaccess_remove_user": {
-            "type": "SecureString"
-        },
-        "extensions_enablevmaccess_expiration": {
-            "type": "SecureString"
-        },
-        "virtualMachines_vmsi001_name": {
-            "defaultValue": "uvmsi002",
-            "type": "String"
-        },
-        "disks_vmsi001_OsDisk_1_d00e86c765c04ff2aa57372d5c306071_externalid": {
-            "defaultValue": "/subscriptions/c6fc12e8-3775-4681-9d11-be09628db080/resourceGroups/RG-SI-001/providers/Microsoft.Compute/disks/vmsi001_OsDisk_1_d00e86c765c04ff2aa57372d5c306071",
-            "type": "String"
-        },
-        "networkInterfaces_vmsi001458_externalid": {
-            "defaultValue": "/subscriptions/c6fc12e8-3775-4681-9d11-be09628db080/resourceGroups/rg-si-001/providers/Microsoft.Network/networkInterfaces/vmsi001458",
-            "type": "String"
-        }
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies a name for generating resource names."
+      }
     },
-    "variables": {},
-    "resources": [
-        {
-            "type": "Microsoft.Compute/virtualMachines",
-            "apiVersion": "2019-07-01",
-            "name": "[parameters('virtualMachines_uvmsi002_name')]",
-            "location": "southindia",
-            "tags": {
-                "Owner": "Person3",
-                "Environment": "Dev"
-            },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Specifies the location for all resources."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies a username for the Virtual Machine."
+      }
+    },
+    "adminPublicKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the SSH rsa public key file as a string. Use \"ssh-keygen -t rsa -b 2048\" to generate your SSH key pairs."
+      }
+    }
+  },
+  "variables": {
+    "vNetName": "[concat(parameters('projectName'), '-vnet')]",
+    "vNetAddressPrefixes": "10.0.0.0/16",
+    "vNetSubnetName": "default",
+    "vNetSubnetAddressPrefix": "10.0.0.0/24",
+    "vmName": "[concat(parameters('projectName'), '-vm')]",
+    "publicIPAddressName": "[concat(parameters('projectName'), '-ip')]",
+    "networkInterfaceName": "[concat(parameters('projectName'), '-nic')]",
+    "networkSecurityGroupName": "[concat(parameters('projectName'), '-nsg')]",
+    "networkSecurityGroupName2": "[concat(variables('vNetSubnetName'), '-nsg')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2018-11-01",
+      "name": "[variables('networkSecurityGroupName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ssh_rule",
             "properties": {
-                "hardwareProfile": {
-                    "vmSize": "Standard_B1ls"
-                },
-                "storageProfile": {
-                    "imageReference": {
-                        "publisher": "Canonical",
-                        "offer": "UbuntuServer",
-                        "sku": "18.04-LTS",
-                        "version": "latest"
-                    },
-                    "osDisk": {
-                        "osType": "Linux",
-                        "name": "[concat(parameters('virtualMachines_uvmsi002_name'), '_OsDisk_1_d00e86c765c04ff2aa57372d5c306071')]",
-                        "createOption": "FromImage",
-                        "caching": "ReadWrite",
-                        "managedDisk": {
-                            "storageAccountType": "Standard_LRS",
-                            "id": "[parameters('disks_uvmsi002_OsDisk_1_d00e86c765c04ff2aa57372d5c306071_externalid')]"
-                        },
-                        "diskSizeGB": 30
-                    },
-                    "dataDisks": []
-                },
-                "osProfile": {
-                    "computerName": "[parameters('virtualMachines_uvmsi002_name')]",
-                    "adminUsername": "azureuser",
-                    "linuxConfiguration": {
-                        "disablePasswordAuthentication": true,
-                        "ssh": {
-                            "publicKeys": [
-                                {
-                                    "path": "/home/azureuser/.ssh/authorized_keys",
-                                    "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDxWwnShzrICICuTUAgFWsqcYC9\r\nn1WQEpjfdrSq1KKwvjYGyBYu7q7S1smH1jPxMQ3qduYlK9dtDf3jLiR8UPTXrKHx\r\nlm/bamjtoC2LeF2Xlhh+dXZiY7PLawL7xjdw1EdOOY/ZAet8bKjEaiyZt2rvanp3\r\nkFyFbnGpR3rjU/DlxsOiI8OMPoCmYM3a6zSfFKBXFEyLr9obSaFRfByRRMNYwf7O\r\nIYBHFSjdpxOucWQYkCLGVqoPNHrJLsKj0M5TrH4wWGK8sEgZWnKAryoHgYUeCxfa\r\nEqBoT7vllHjozMUqkiPra6vVCp8cURxBTpQe+vDRcZjh/5lf2ZMmgNzQUTLkdnUH\r\nmezliGX1BRsjjD1dyJO0eUX7Z9nxPgtSC2z96qoriDQJ5mS5V/+JlvFYnMvfgkKD\r\n27gRmtF9hu1XqWsCMvuIkm+t/M7UaH9UHaHQpO8Cw+ehxOp3FheueEJdENUOCpEo\r\nxfXqUxv1mNAvpYvMXsMRTRsNNMMB+YD8P4+ZfEM= generated-by-azure\r\n"
-                                }
-                            ]
-                        },
-                        "provisionVMAgent": true
-                    },
-                    "secrets": [],
-                    "allowExtensionOperations": true,
-                    "requireGuestProvisionSignal": true
-                },
-                "networkProfile": {
-                    "networkInterfaces": [
-                        {
-                            "id": "[parameters('networkInterfaces_uvmsi002458_externalid')]"
-                        }
-                    ]
-                }
+              "description": "Locks inbound down to ssh default port 22.",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 123,
+              "direction": "Inbound"
             }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2018-11-01",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      },
+      "sku": {
+        "name": "Basic"
+      }
+    },
+    {
+      "comments": "Simple Network Security Group for subnet [variables('vNetSubnetName')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2019-08-01",
+      "name": "[variables('networkSecurityGroupName2')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "default-allow-22",
+            "properties": {
+              "priority": 1000,
+              "access": "Allow",
+              "direction": "Inbound",
+              "destinationPortRange": "22",
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2018-11-01",
+      "name": "[variables('vNetName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName2'))]"
+      ],
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vNetAddressPrefixes')]"
+          ]
         },
-        {
-            "type": "Microsoft.Compute/virtualMachines/extensions",
-            "apiVersion": "2019-07-01",
-            "name": "[concat(parameters('virtualMachines_uvmsi002_name'), '/enablevmaccess')]",
-            "location": "southindia",
-            "dependsOn": [
-                "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachines_uvmsi002_name'))]"
-            ],
+        "subnets": [
+          {
+            "name": "[variables('vNetSubnetName')]",
             "properties": {
-                "autoUpgradeMinorVersion": true,
-                "publisher": "Microsoft.OSTCExtensions",
-                "type": "VMAccessForLinux",
-                "typeHandlerVersion": "1.4",
-                "settings": {},
-                "protectedSettings": {
-                    "username": "[parameters('extensions_enablevmaccess_username')]",
-                    "password": "[parameters('extensions_enablevmaccess_password')]",
-                    "ssh_key": "[parameters('extensions_enablevmaccess_ssh_key')]",
-                    "reset_ssh": "[parameters('extensions_enablevmaccess_reset_ssh')]",
-                    "remove_user": "[parameters('extensions_enablevmaccess_remove_user')]",
-                    "expiration": "[parameters('extensions_enablevmaccess_expiration')]"
-                }
+              "addressPrefix": "[variables('vNetSubnetAddressPrefix')]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName2'))]"
+              }
             }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2018-11-01",
+      "name": "[variables('networkInterfaceName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vNetName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vNetName'), variables('vNetSubnetName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2018-10-01",
+      "name": "[variables('vmName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_D2s_v3"
+        },
+        "osProfile": {
+          "computerName": "[variables('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+                  "keyData": "[parameters('adminPublicKey')]"
+                }
+              ]
+            }
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "fromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+            }
+          ]
         }
-    ]
+      }
+    }
+  ],
+  "outputs": {
+    "adminUsername": {
+      "type": "string",
+      "value": "[parameters('adminUsername')]"
+    }
+  }
 }
